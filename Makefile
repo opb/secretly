@@ -4,7 +4,7 @@ GT := $$GITHUB_TOKEN
 TAG := $$CIRCLE_TAG
 
 release: gh-release dist
-	[ "$(TAG)" ] || exit 0;
+	[ "$(TAG)" ] || exit 1;
 
 	github-release release \
 	--security-token $(GT) \
