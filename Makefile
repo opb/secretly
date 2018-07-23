@@ -4,8 +4,8 @@ GT := $$GITHUB_TOKEN
 TAG := $$CIRCLE_TAG
 
 release: gh-release dist
-	@if [ "$(TAG)" = "" ]; then\
-		echo "Not a tag - skipping";\
+	if [ "$(TAG)" = "" ]; then
+		echo "Not a tag - skipping";
 	else
 		github-release release \
 		--security-token $(GT) \
