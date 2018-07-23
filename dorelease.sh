@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 printenv
-[ "$(TAG)" ] || exit 0;
+[ "$CIRCLE_TAG" ] || exit 0;
 
 github-release release \
     --security-token $(GT) \
