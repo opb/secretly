@@ -11,10 +11,10 @@ func TestEnvOS(t *testing.T) {
 
 	res := envVarsFromOS(in)
 
-	expected := envvars(map[string]string{
+	expected := map[string]string{
 		"foo": "bar",
 		"BAZ": "BUM",
-	})
+	}
 
 	assert.Equal(t, res, expected, "These maps should be equal")
 }
