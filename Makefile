@@ -11,28 +11,32 @@ pushrelease: release
 endif
 
 release: gh-release dist
-	github-release release \
-	--security-token $(GT) \
-	--user opb \
-	--repo secretly \
-	--tag $(VERSION) \
-	--name $(VERSION)
+	@if [ "$(TAG)" = "" ]; then\
+		echo "Not a tag - skipping";\
+	else
+		github-release release \
+		--security-token $(GT) \
+		--user opb \
+		--repo secretly \
+		--tag $(VERSION) \
+		--name $(VERSION)
 
-	github-release upload \
-	--security-token $(GT) \
-	--user opb \
-	--repo secretly \
-	--tag $(VERSION) \
-	--name secretly-$(VERSION)-darwin-amd64 \
-	--file dist/secretly-$(VERSION)-darwin-amd64
+		github-release upload \
+		--security-token $(GT) \
+		--user opb \
+		--repo secretly \
+		--tag $(VERSION) \
+		--name secretly-$(VERSION)-darwin-amd64 \
+		--file dist/secretly-$(VERSION)-darwin-amd64
 
-	github-release upload \
-	--security-token $(GT) \
-	--user opb \
-	--repo secretly \
-	--tag $(VERSION) \
-	--name secretly-$(VERSION)-linux-amd64 \
-	--file dist/secretly-$(VERSION)-linux-amd64
+		github-release upload \
+		--security-token $(GT) \
+		--user opb \
+		--repo secretly \
+		--tag $(VERSION) \
+		--name secretly-$(VERSION)-linux-amd64 \
+		--file dist/secretly-$(VERSION)-linux-amd64
+	fi
 
 dist: clean
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build $(LDFLAGS) -v -o dist/secretly-$(VERSION)-darwin-amd64
