@@ -13,7 +13,6 @@ release: gh-release dist
 		--repo secretly \
 		--tag $(VERSION) \
 		--name $(VERSION)
-
 		github-release upload \
 		--security-token $(GT) \
 		--user opb \
@@ -21,7 +20,6 @@ release: gh-release dist
 		--tag $(VERSION) \
 		--name secretly-$(VERSION)-darwin-amd64 \
 		--file dist/secretly-$(VERSION)-darwin-amd64
-
 		github-release upload \
 		--security-token $(GT) \
 		--user opb \
