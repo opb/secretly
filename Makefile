@@ -3,7 +3,7 @@ LDFLAGS := -ldflags='-s -w -X "main.Version=$(VERSION)"'
 GT := $$GITHUB_TOKEN
 TAG := $$CIRCLE_TAG
 
-ifeq ($(TAG),"")
+ifeq ($(TAG),)
 $(info CIRCLE_TAG not set!)
 pushrelease:
 else
