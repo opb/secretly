@@ -3,15 +3,8 @@ LDFLAGS := -ldflags='-s -w -X "main.Version=$(VERSION)"'
 GT := $$GITHUB_TOKEN
 TAG := $$CIRCLE_TAG
 
-ifeq ($(TAG),)
-$(info CIRCLE_TAG not set!)
-pushrelease:
-else
-pushrelease: release
-endif
-
 release: gh-release dist
-	@if [ "$(TAG)" = "" ]; then\
+	if [ "$(TAG)" = "" ]; then\
 		echo "Not a tag - skipping";\
 	else
 		github-release release \
