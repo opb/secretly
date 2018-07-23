@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-printenv
 [ "$CIRCLE_TAG" ] || exit 0;
 
 github-release release \
