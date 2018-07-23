@@ -3,9 +3,14 @@ LDFLAGS := -ldflags='-s -w -X "main.Version=$(VERSION)"'
 GT := $$GITHUB_TOKEN
 TAG := $$CIRCLE_TAG
 
-release: gh-release dist
-	[ "$(TAG)" ] || exit 1;
+ifeq ($(TAG),)
+$(info CIRCLE_TAG not set!)
+pushrelease:
+else
+pushrelease: release
+endif
 
+release: gh-release dist
 	github-release release \
 	--security-token $(GT) \
 	--user opb \
