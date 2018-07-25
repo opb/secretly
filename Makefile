@@ -1,10 +1,11 @@
 VERSION := $(shell git describe --tags --always --dirty="-dev")
+IS_TAG := $(shell git describe --tags --candidates=0 2> /dev/null)
 LDFLAGS := -ldflags='-s -w -X "main.Version=$(VERSION)"'
 IS_VERSION := $(shell echo $(VERSION) | cut -c1-1)
 IS_DEV := $(lastword $(subst -dev, dev,$(VERSION)))
 
 release: gh-release dist
-ifneq ($(IS_VERSION),v)
+ifeq ($(IS_TAG),)
 		@echo "Not tagged with a version, aborting"
 		exit 2
 endif
