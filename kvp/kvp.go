@@ -1,34 +1,96 @@
 package kvp
 
 import (
-	"encoding/json"
-
+	"fmt"
+	"log"
 	"os"
 	"strings"
-
-	"fmt"
-
-	"log"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
-type AwsKvp struct {
-	Key         string
-	Value       string
-	SecretAlias string
+type Kvp struct {
+	Key    string
+	Value  string
+	Source string
 }
 
-type OrderedAwsKvps struct {
+type OrderedKvps struct {
 	pos       int
 	order     []string
-	maxKeyLen int
-	data      map[string][]AwsKvp
+	data      map[string][]Kvp
 }
 
-func (o *OrderedAwsKvps) next() (string, []AwsKvp) {
+type Provider interface {
+	GetPairs(sourceNames []string) (*OrderedKvps, error)
+}
+
+func List(secretNames []string, p Provider) {
+	ordered, err := p.GetPairs(secretNames)
+	if err != nil {
+		log.Fatalln("Could not get secrets from Source:", err.Error())
+	}
+
+	format := fmt.Sprintf("%%-%vv", 23)
+
+	fmt.Printf(format, "Key")
+	fmt.Print("From Source\n")
+	fmt.Printf(format, "===")
+	fmt.Print("===========\n")
+
+	for {
+		secretName, kvps := ordered.next()
+		if kvps == nil {
+			break
+		}
+		for _, kvp := range kvps {
+			fmt.Printf(format, kvp.Key)
+			fmt.Println(secretName)
+		}
+
+	}
+}
+
+func (o *OrderedKvps) EnvVars() map[string]string {
+	out := make(map[string]string)
+
+	for {
+		_, kvps := o.next()
+		if kvps == nil {
+			break
+		}
+		for _, kvp := range kvps {
+			out[kvp.Key] = kvp.Value
+		}
+
+	}
+
+	return out
+}
+
+func MergedEnvPairs(sourceNames []string, p Provider) ([]string, error) {
+	// get map of env vars from the OS
+	initialVars := envVarsFromOS(os.Environ())
+
+	// now get ordered keys from the Provider
+	orderedVars, err := p.GetPairs(sourceNames)
+	if err != nil {
+		return nil, err
+	}
+
+	kvps := orderedVars.EnvVars()
+
+	for k, v := range kvps {
+		initialVars[k] = v
+	}
+
+	var out []string
+	for k, v := range initialVars {
+		out = append(out, fmt.Sprintf("%s=%v", k, v))
+	}
+
+	return out, nil
+}
+
+func (o *OrderedKvps) next() (string, []Kvp) {
 	cur := o.pos
 	if o.pos >= len(o.order) {
 		return "", nil
@@ -39,98 +101,9 @@ func (o *OrderedAwsKvps) next() (string, []AwsKvp) {
 	return o.order[cur], out
 }
 
-func (o *OrderedAwsKvps) Append(secretName string, awskvps []AwsKvp) {
-	for _, awskvp := range awskvps {
-		if len(awskvp.Key) > o.maxKeyLen {
-			o.maxKeyLen = len(awskvp.Key)
-		}
-	}
+func (o *OrderedKvps) append(secretName string, kvps []Kvp) {
 	o.order = append(o.order, secretName)
-	o.data[secretName] = awskvps
-}
-
-func (o *OrderedAwsKvps) EnvVars() map[string]string {
-	out := make(map[string]string)
-
-	for {
-		_, awskvps := o.next()
-		if awskvps == nil {
-			break
-		}
-		for _, awskvp := range awskvps {
-			out[awskvp.Key] = awskvp.Value
-		}
-
-	}
-
-	return out
-}
-
-func (o *OrderedAwsKvps) KeysFromSecrets() map[string]string {
-	out := make(map[string]string)
-
-	for {
-		secretName, awskvps := o.next()
-		if awskvps == nil {
-			break
-		}
-		for _, awskvp := range awskvps {
-			out[awskvp.Key] = secretName
-		}
-
-	}
-
-	return out
-}
-
-var cfg aws.Config
-
-func PrintKeyListBySecret(secretNames []string) {
-	ordered, err := kvpsFromAWS(secretNames)
-	if err != nil {
-		log.Fatalln("Could not get secrets from AWS:", err.Error())
-	}
-
-	format := fmt.Sprintf("%%-%vv", ordered.maxKeyLen+3)
-
-	fmt.Printf(format, "Key")
-	fmt.Print("From Secret\n")
-	fmt.Printf(format, "===")
-	fmt.Print("===========\n")
-
-	for {
-		secretName, awskvps := ordered.next()
-		if awskvps == nil {
-			break
-		}
-		for _, awskvp := range awskvps {
-			fmt.Printf(format, awskvp.Key)
-			fmt.Println(secretName)
-		}
-
-	}
-}
-
-func EnvPairs(secretsNames []string) ([]string, error) {
-	initialVars := envVarsFromOS(os.Environ())
-
-	orderedAwsVars, err := kvpsFromAWS(secretsNames)
-	if err != nil {
-		return nil, err
-	}
-
-	awsKvps := orderedAwsVars.EnvVars()
-
-	for k, v := range awsKvps {
-		initialVars[k] = v
-	}
-
-	var out []string
-	for k, v := range initialVars {
-		out = append(out, fmt.Sprintf("%s=%v", k, v))
-	}
-
-	return out, nil
+	o.data[secretName] = kvps
 }
 
 func envVarsFromOS(pairs []string) map[string]string {
@@ -145,53 +118,4 @@ func envVarsFromOS(pairs []string) map[string]string {
 	}
 
 	return e
-}
-
-func kvpsFromAWS(secretsNames []string) (*OrderedAwsKvps, error) {
-	var err error
-	cfg, err = external.LoadDefaultAWSConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	if region := os.Getenv("SECRETLY_REGION"); region != "" {
-		cfg.Region = region
-	}
-
-	smSvc := secretsmanager.New(cfg)
-
-	ordered := &OrderedAwsKvps{
-		pos:       0,
-		order:     []string{},
-		maxKeyLen: 0,
-		data:      make(map[string][]AwsKvp),
-	}
-
-	for _, secretName := range secretsNames {
-
-		awskvps := []AwsKvp{}
-
-		req := smSvc.GetSecretValueRequest(&secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(secretName),
-		})
-
-		resp, err := req.Send()
-		if err != nil {
-			return nil, err
-		}
-
-		var respData map[string]string
-
-		err = json.Unmarshal([]byte(*resp.SecretString), &respData)
-		if err != nil {
-			return nil, err
-		}
-
-		for k, v := range respData {
-			awskvps = append(awskvps, AwsKvp{Key: k, Value: v, SecretAlias: secretName})
-		}
-		ordered.Append(secretName, awskvps)
-	}
-
-	return ordered, nil
 }

@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"log"
@@ -8,15 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var runEnvFiles bool
+
 func init() {
 	RootCmd.AddCommand(runCmd)
+	runCmd.Flags().BoolVarP(&runEnvFiles, "use-files", "f", false, "Use files instead of AWS Secrets Manager")
 }
 
 var runCmd = &cobra.Command{
 	Use:   "run <secretsNames...> -- <command> [<arg...>]",
-	Short: "Grab secrets from AWS SecretsManager and load into the env",
+	Short: "Grab secrets from AWS SecretsManager (or local files) and load into the env",
 	Long: `Use secretly as a prefix for a command to load secrets from
-AWS SecretsManager into the Env variable context for 
+AWS SecretsManager (or local files) into the Env variable context for 
 the specified command`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		dashIdx := cmd.ArgsLenAtDash()
@@ -45,7 +48,13 @@ func execRun(cmd *cobra.Command, args []string) {
 		commandArgs = commandAndArgs[2:]
 	}
 
-	envs, err := kvp.EnvPairs(secretsNames)
+	var provider kvp.Provider
+	if runEnvFiles{
+		provider = kvp.FileProvider{}
+	}else{
+		provider = kvp.SMProvider{}
+	}
+	envs, err := kvp.MergedEnvPairs(secretsNames, provider)
 	if err != nil {
 		log.Fatalln(err)
 	}

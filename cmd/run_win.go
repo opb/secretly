@@ -1,6 +1,6 @@
 // +build !linux,!darwin
 
-package cmd
+package main
 
 import (
 	"os"
