@@ -33,7 +33,7 @@ You can pass in multiple Secrets. The Secrets are evaluated in order, and if the
 secretly run mySMsecret myOtherSecret -- mybinary arg1 arg2
 ```
 
-## Using File
+## Using Env Files
 
 It can be useful to test this with files when developing locally, as opposed to calling out to SecretsManager. When the `--use-files` (`-f`) flag is specified, the secrets that follow are treated as filenames.
 
