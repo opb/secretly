@@ -7,3 +7,7 @@ buildall: clean
 	GOOS=linux  GOARCH=amd64 CGO_ENABLED=0 go build -o build/secretly-$(VERSION)-linux-amd64  -ldflags=$(LDFLAGS) -v ./cmd
 clean:
 	rm -rf build
+
+builddocker: clean
+	mkdir build
+	GOOS=linux  GOARCH=amd64 CGO_ENABLED=0 go build -o build/secretly  -ldflags=$(LDFLAGS) ./cmd
