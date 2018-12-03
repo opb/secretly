@@ -6,6 +6,10 @@ Each Secret, in AWS terminology, is one or more key-value pairs and can be set w
 
 This can be useful when you need to inject environment variables into a third-party command/binary which you need to run, allowing for centralised management of the secrets for use across containers or instances.  
 
+## Prerequisites
+
+GoLang ^1.11 [Download here](https://golang.org/project/)
+
 ## Examples
 
 Assuming you wanted to run a command called `mybinary` (along with a couple of arguments) and you had set up a Secret within SecretsManager called `mySMsecret` and it consisted of the following key-value pairs:

@@ -44,8 +44,8 @@ func execRun(cmd *cobra.Command, args []string) {
 	command := commandAndArgs[0]
 
 	var commandArgs []string
-	if len(commandAndArgs) > 2 {
-		commandArgs = commandAndArgs[2:]
+	if len(commandAndArgs) > 1 {
+		commandArgs = commandAndArgs[1:]
 	}
 
 	var provider kvp.Provider
