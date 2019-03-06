@@ -37,6 +37,12 @@ You can pass in multiple Secrets. The Secrets are evaluated in order, and if the
 secretly run mySMsecret myOtherSecret -- mybinary arg1 arg2
 ```
 
+You can use the tool to check that secrets all have the same keys available. Useful for making sure that the configuration of a new feature, for example, is rolled out across all environments. If not the same, the application exists with a non-zero exit code, and some debug data.
+
+```
+secretly compare myProdSecrets myStagingSecrets myQASecrets
+```
+
 ## Using Env Files
 
 It can be useful to test this with files when developing locally, as opposed to calling out to SecretsManager. When the `--use-files` (`-f`) flag is specified, the secrets that follow are treated as filenames.
