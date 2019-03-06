@@ -150,3 +150,39 @@ func envVarsFromOS(pairs []string) map[string]string {
 
 	return e
 }
+
+// flipNamesWithKeys takes the map of secretNames, which have the key-value pairs as the contents
+// and flips it so that the presences of the keys are recorded across different secretNames
+func flipNamesWithKeys(names map[string]map[string]string) (map[string]map[string]bool, bool) {
+
+	output := map[string]map[string]bool{}
+
+	var nameList []string
+	var keyList []string
+
+	successFlag := true
+
+	for name, contents := range names {
+		nameList = append(nameList, name)
+		for k := range contents {
+			if _, ok := output[k]; !ok {
+				keyList = append(keyList, k)
+				output[k] = map[string]bool{name: true}
+			} else {
+				output[k][name] = true
+			}
+		}
+	}
+
+	// now add false to ones that are missing
+	for _, k := range keyList {
+		for _, n := range nameList {
+			if _, ok := output[k][n]; !ok {
+				output[k][n] = false
+				successFlag = false
+			}
+		}
+	}
+
+	return output, successFlag
+}
