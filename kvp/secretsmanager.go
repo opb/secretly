@@ -44,7 +44,7 @@ func (smp SMProvider) GetPairs(sourceNames []string) (*OrderedKvps, error) {
 }
 
 func (smp SMProvider) GetAll(sourceNames []string) (map[string]map[string]string, error) {
-	var output map[string]map[string]string
+	output := map[string]map[string]string{}
 
 	smSvc, err := getSmService()
 	if err != nil {

@@ -55,28 +55,17 @@ func Compare(secretNames []string, p Provider) {
 		log.Fatalln("Please supply two or more secrets or files in order to compare them")
 	}
 
-	ordered, err := p.GetPairs(secretNames)
+	all, err := p.GetAll(secretNames)
 	if err != nil {
 		log.Fatalln("Could not get secrets from Source:", err.Error())
 	}
 
-	format := fmt.Sprintf("%%-%vv", 23)
+	allKeys, allKeysPresent := flipNamesWithKeys(all)
 
-	fmt.Printf(format, "Key")
-	fmt.Print("From Source\n")
-	fmt.Printf(format, "===")
-	fmt.Print("===========\n")
+	log.Println(allKeys)
 
-	for {
-		secretName, kvps := ordered.next()
-		if kvps == nil {
-			break
-		}
-		for _, kvp := range kvps {
-			fmt.Printf(format, kvp.Key)
-			fmt.Println(secretName)
-		}
-
+	if !allKeysPresent {
+		log.Fatalln("MISMATCH!")
 	}
 }
 

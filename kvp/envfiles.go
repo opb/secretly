@@ -31,7 +31,7 @@ func (smp FileProvider) GetPairs(sourceNames []string) (*OrderedKvps, error) {
 }
 
 func (smp FileProvider) GetAll(sourceNames []string) (map[string]map[string]string, error) {
-	var output map[string]map[string]string
+	output := map[string]map[string]string{}
 
 	for _, sourceName := range sourceNames {
 		envData, err := godotenv.Read(sourceName)
