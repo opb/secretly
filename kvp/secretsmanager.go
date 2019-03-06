@@ -12,41 +12,24 @@ import (
 
 type SMProvider struct{}
 
-func (smp SMProvider)GetPairs(sourceNames []string) (*OrderedKvps, error) {
+func (smp SMProvider) GetPairs(sourceNames []string) (*OrderedKvps, error) {
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	smSvc, err := getSmService()
 	if err != nil {
 		return nil, err
 	}
 
-	if region := os.Getenv("SECRETLY_REGION"); region != "" {
-		cfg.Region = region
-	}
-
-	smSvc := secretsmanager.New(cfg)
-
 	ordered := &OrderedKvps{
-		pos:       0,
-		order:     []string{},
-		data:      make(map[string][]Kvp),
+		pos:   0,
+		order: []string{},
+		data:  make(map[string][]Kvp),
 	}
 
 	for _, secretName := range sourceNames {
 
 		awskvps := []Kvp{}
 
-		req := smSvc.GetSecretValueRequest(&secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(secretName),
-		})
-
-		resp, err := req.Send()
-		if err != nil {
-			return nil, err
-		}
-
-		var respData map[string]string
-
-		err = json.Unmarshal([]byte(*resp.SecretString), &respData)
+		respData, err := getSecretsMapForSecret(smSvc, secretName)
 		if err != nil {
 			return nil, err
 		}
@@ -58,4 +41,57 @@ func (smp SMProvider)GetPairs(sourceNames []string) (*OrderedKvps, error) {
 	}
 
 	return ordered, nil
+}
+
+func (smp SMProvider) GetAll(sourceNames []string) (map[string]map[string]string, error) {
+	var output map[string]map[string]string
+
+	smSvc, err := getSmService()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, secretName := range sourceNames {
+		respData, err := getSecretsMapForSecret(smSvc, secretName)
+		if err != nil {
+			return nil, err
+		}
+
+		output[secretName] = respData
+	}
+
+	return output, nil
+}
+
+func getSmService() (*secretsmanager.SecretsManager, error) {
+	cfg, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if region := os.Getenv("SECRETLY_REGION"); region != "" {
+		cfg.Region = region
+	}
+
+	return secretsmanager.New(cfg), nil
+}
+
+func getSecretsMapForSecret(svc *secretsmanager.SecretsManager, name string) (map[string]string, error) {
+	req := svc.GetSecretValueRequest(&secretsmanager.GetSecretValueInput{
+		SecretId: aws.String(name),
+	})
+
+	resp, err := req.Send()
+	if err != nil {
+		return nil, err
+	}
+
+	var respData map[string]string
+
+	err = json.Unmarshal([]byte(*resp.SecretString), &respData)
+	if err != nil {
+		return nil, err
+	}
+
+	return respData, nil
 }

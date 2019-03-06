@@ -14,16 +14,47 @@ type Kvp struct {
 }
 
 type OrderedKvps struct {
-	pos       int
-	order     []string
-	data      map[string][]Kvp
+	pos   int
+	order []string
+	data  map[string][]Kvp
 }
 
 type Provider interface {
 	GetPairs(sourceNames []string) (*OrderedKvps, error)
+	GetAll(sourceNames []string) (map[string]map[string]string, error)
 }
 
 func List(secretNames []string, p Provider) {
+	ordered, err := p.GetPairs(secretNames)
+	if err != nil {
+		log.Fatalln("Could not get secrets from Source:", err.Error())
+	}
+
+	format := fmt.Sprintf("%%-%vv", 23)
+
+	fmt.Printf(format, "Key")
+	fmt.Print("From Source\n")
+	fmt.Printf(format, "===")
+	fmt.Print("===========\n")
+
+	for {
+		secretName, kvps := ordered.next()
+		if kvps == nil {
+			break
+		}
+		for _, kvp := range kvps {
+			fmt.Printf(format, kvp.Key)
+			fmt.Println(secretName)
+		}
+
+	}
+}
+
+func Compare(secretNames []string, p Provider) {
+	if len(secretNames) < 2 {
+		log.Fatalln("Please supply two or more secrets or files in order to compare them")
+	}
+
 	ordered, err := p.GetPairs(secretNames)
 	if err != nil {
 		log.Fatalln("Could not get secrets from Source:", err.Error())
